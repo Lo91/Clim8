@@ -228,11 +228,11 @@ printf("Sensor::getRightSensor – create OregonSensorV3\n");
  }
 #ifdef SENSORDEBUG
  else {
-   std::cout << "[Sensor::getRightSensor] right length but unknown signature:" << s << std::endl;
+   std::cerr << "[Sensor::getRightSensor] right length but unknown signature:" << s << std::endl;
  }
 #endif 
  } else {
-  std::cout << "[Sensor::getRightSensor] dont know how to decode: " << s << std::endl;
+  std::cerr << "[Sensor::getRightSensor] dont know how to decode: " << s << std::endl;
  }
  
 return NULL;
@@ -309,14 +309,14 @@ _sensorType=0x2D10;
 return decode_RGR918(pt); break;
  
 default:
-  std::cout << "Unknown sensor id: " << std::hex << isensorId << std::endl;
+  std::cerr << "Unknown sensor id: " << std::hex << isensorId << std::endl;
   return false;
   break;
 }
  
  }
  else {
-  std::cout << "OSV2 - decode: bad length" << std::endl; 
+  std::cerr << "OSV2 - decode: bad length" << std::endl; 
  }
  return false;
 }
@@ -748,13 +748,13 @@ bool OregonSensorV3::decode(char * _str) {
       _sensorName = "THGR810";
       return decode_THGR810(pt); break;
     default:
-      std::cout << "Unknown sensor id: " << std::hex << isensorId << std::endl;
+      std::cerr << "Unknown sensor id: " << std::hex << isensorId << std::endl;
       return false;
       break;
     }
   }
   else {
-    std::cout << "OSV3 - decode: bad length" << std::endl; 
+    std::cerr << "OSV3 - decode: bad length" << std::endl; 
   }
   return false;
 }

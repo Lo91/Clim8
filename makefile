@@ -1,9 +1,9 @@
 CXXFLAGS += -O2 -Wall -g -pthread
 
-all: test
+all: clim8
 
-test: RCSwitch.o RcOok.o Sensor.o test.o
+clim8: RCSwitch.o RcOok.o Sensor.o main.o
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $+ -o $@ -lwiringPi
 
 clean:
-	$(RM) *.o test
+	$(RM) *.o clim8
