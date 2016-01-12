@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-		<title>CliM8 1.0</title>
+		<title>Clim8 1.1</title>
 		
 		
 		<!-- 1. Add these JavaScript inclusions in the head of your page -->
@@ -12,8 +12,18 @@
 		
 		<!-- 2. Add the JavaScript to initialize the chart on document ready -->
 		<script type="text/javascript">
-		$(document).ready(function() {
+var colors = [];
+colors["Cave"] = "#CC1352";
+colors["Escalier"] = "#998445";
+colors["Dehors"] = "#90C3D4";
+colors["Salon"] = "#EBBC23";
 
+function PrintBrief( room, stats )
+{
+    $( "#T_cur_"+room ).text( room+": "+stats.T[room]+" °C   "+stats.H[room]+" %" ).css('color', colors[room]);
+}
+
+$(document).ready(function() {
 
 $.get('current.csv', function(data) {
 
@@ -73,6 +83,12 @@ var optionsH = {
        series: []
     };
 
+    var briefDate;
+    var briefStats = {
+        T: [],
+        H: []
+    };
+
     var lines = data.split('\n');
 
     var seriesT = [];
@@ -83,25 +99,31 @@ var optionsH = {
         if( fields.length < 2 )
         	return;
         var room = fields[1];
-	if( !(room in seriesH) )
-{
-	seriesT[room] = {
-		name: room,
-		data: []
-		};
- 	optionsT.series.push(seriesT[room]);
+    	if( !(room in seriesH) )
+        {
+        	seriesT[room] = {
+        		name: room,
+        		data: [],
+                color : colors[room]
+        		};
+         	optionsT.series.push(seriesT[room]);
 
-	seriesH[room] = {
-		name: room,
-		data: []
-		};
- 	optionsH.series.push(seriesH[room]);
-}
+        	seriesH[room] = {
+        		name: room,
+        		data: [],
+                color : colors[room]
+        		};
+         	optionsH.series.push(seriesH[room]);
+        }
+        briefDate = fields[0];
         var atDate = new Date( fields[0] );
         var atTime = atDate.getTime();
         var valT = parseFloat(fields[2]);
+        var valH = parseFloat(fields[3]);
+        briefStats.T[room] = valT;
+        briefStats.H[room] = valH;
         var colsT = [ atTime, valT ];
-        var colsH = [ atTime, parseFloat(fields[3]) ];
+        var colsH = [ atTime, valH ];
         if( lineNo % 5 == 0)
         {
         	//options.xAxis.categories.push( atTime );
@@ -109,16 +131,29 @@ var optionsH = {
         	seriesH[room].data.push(colsH);
         }
     });
-    
+
+    Highcharts.setOptions({
+        global: {
+            useUTC: false
+        }
+    });   
     var chartT = new Highcharts.Chart(optionsT);
     var chartH = new Highcharts.Chart(optionsH);
 
+    PrintBrief( "Dehors", briefStats );
+    PrintBrief( "Cave", briefStats );
+    $( "#Today" ).text( briefDate );
 });
 
 });
 
 </script>
 <body>
+<div style="text-align: center; font-size: x-large; font-family: sans-serif; color: darkgrey;">
+<div id="Today">Loading...</div>
+<div id="T_cur_Dehors"></div>
+<div id="T_cur_Cave"></div>
+</div>
 <div id="containerT" style="height: 500px; min-width: 500px"></div>
 <div id="containerH" style="height: 500px; min-width: 500px"></div>
 	

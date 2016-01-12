@@ -1,8 +1,13 @@
-nohup sudo ./clim8 -log Cave Dehors Escalier &
+rm stop
+nohup sudo ./clim8 -log Cave Dehors Salon &
 
-install()
+history()
 {
 	WWW=/var/www/html
 	ln index.html $WWW/index.html
 	ln current.csv $WWW/current.csv
+
+	sudo vi /etc/rc.local
+
 }
+
