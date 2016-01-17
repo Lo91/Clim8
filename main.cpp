@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 						{
 							fclose(LogOut);
 						}
-						LogOut = fopen( fileName, "w+" );
+						LogOut = fopen( fileName, "a+" );
 						system("rm current.csv");
 						char cmd[40];
 						sprintf(cmd,"ln -s %s current.csv", fileName );
@@ -90,6 +90,12 @@ int main(int argc, char *argv[])
 					}
 				}
 				fprintf(LogOut,"%s,%s,%.1f,%.0f\n", timeString,label,s->getTemperature(),s->getHumidity());
+				FILE* sigFlush = fopen("flush","r");
+				if( sigFlush )
+				{
+					fflush( LogOut );
+					fclose( sigFlush );
+				}
 			}
 			delete s;
 		}

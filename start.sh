@@ -1,5 +1,5 @@
 rm stop
-nohup sudo ./clim8 -log Cave Dehors Salon &
+nohup sudo ./clim8 -log Cave Dehors "Salle de bain Bas" &
 
 history()
 {
