@@ -34,6 +34,7 @@ function Room( name )
                 data: [],
                 color : colors[name]
                 };
+    this.lastSkipped = false;
 
     this.appendT = function( v )
     {
@@ -53,17 +54,36 @@ function Room( name )
         this.maxH = Math.max(v,this.maxH);
     }
 
-    this.lineTo = function( t )
+    this.pushLast = function( t )
+    {
+        var colsT = [ t, this.lastT ];
+        var colsH = [ t, this.lastH ];
+        this.seriesT.data.push(colsT);
+        this.seriesH.data.push(colsH);
+        this.lastSkipped = false;
+    }
+
+    this.skipOrPush = function( t )
     {
         if( (this.lastTime == undefined) || ((t-this.lastTime) > 60*15*1000) )
         {
             this.lastTime = t;
-            var colsT = [ t, this.lastT ];
-            var colsH = [ t, this.lastH ];
-            this.seriesT.data.push(colsT);
-            this.seriesH.data.push(colsH);
+            this.pushLast( t );
+        }
+        else
+        {
+            this.skippedTime = t;
+            this.lastSkipped = true;
         }
     }
+
+    this.forceLast = function()
+    {
+        if( this.lastSkipped )
+            this.pushLast( this.skippedTime );
+    }
+
+
 
     this.print = function()
     {
@@ -176,7 +196,7 @@ var optionsH = {
         }
         room.appendT( valT );
         room.appendH( valH );
-        room.lineTo( atTime );
+        room.skipOrPush( atTime );
     });
 
     Highcharts.setOptions({
@@ -184,13 +204,15 @@ var optionsH = {
             useUTC: false
         }
     });   
-    var chartT = new Highcharts.Chart(optionsT);
-    var chartH = new Highcharts.Chart(optionsH);
 
     $( "#Today" ).text( lastDate );
     Object.keys(rooms).sort().reverse().forEach( function(key,i) {
+        rooms[key].forceLast();
         rooms[key].print();
     })
+
+    var chartT = new Highcharts.Chart(optionsT);
+    var chartH = new Highcharts.Chart(optionsH);
 });
 
 });
