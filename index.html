@@ -2,8 +2,8 @@
 <html>
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-		<title>Clim8 1.1</title>
-		
+		<title>Climate 1.3</title>
+        <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 		
 		<!-- 1. Add these JavaScript inclusions in the head of your page -->
 		<script type="text/javascript" src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
@@ -17,15 +17,66 @@ colors["Cave"] = "#CC1352";
 colors["Escalier"] = "#998445";
 colors["Dehors"] = "#90C3D4";
 colors["Salon"] = "#EBBC23";
+colors["Pelouse"] = "#3FD15A";
 
-function PrintBrief( room, stats )
+
+function Room( name )
 {
-    $( "#T_cur_"+room ).text( room+": "+stats.T[room]+" °C   "+stats.H[room]+" %" ).css('color', colors[room]);
+    this.name = name;
+    this.seriesT = {
+                name: name,
+                data: [],
+                color : colors[name]
+                };
+    this.seriesH = {
+                name: name,
+                data: [],
+                color : colors[name]
+                };
+
+    this.appendT = function( v )
+    {
+        if( this.lastT == undefined )
+            this.minT = this.maxT = v;
+        this.lastT = v;
+        this.minT = Math.min(v,this.minT);
+        this.maxT = Math.max(v,this.maxT);
+    }
+
+    this.appendH = function( v )
+    {
+        if( this.lastH == undefined )
+            this.minH = this.maxH = v;
+        this.lastH = v;
+        this.minH = Math.min(v,this.minH);
+        this.maxH = Math.max(v,this.maxH);
+    }
+
+    this.lineTo = function( t )
+    {
+        if( (this.lastTime == undefined) || ((t-this.lastTime) > 60*15*1000) )
+        {
+            this.lastTime = t;
+            var colsT = [ t, this.lastT ];
+            var colsH = [ t, this.lastH ];
+            this.seriesT.data.push(colsT);
+            this.seriesH.data.push(colsH);
+        }
+    }
+
+    this.print = function()
+    {
+        $( "#Today" ).after( "<div id='T_cur_"+name+"'></div>\n" );
+        var minmaxT = "["+this.minT+"-"+this.maxT+"]";
+        var minmaxH = "["+this.minH+"-"+this.maxH+"]";
+        $( "#T_cur_"+name ).text( name+": "+this.lastT+"°C "+minmaxT+"    "+this.lastH+"% "+minmaxH+"" ).css('color', colors[name]);
+    }
 }
 
 $(document).ready(function() {
 
 $.get('current.csv', function(data) {
+var lines = data.split('\n');
 
 var optionsT = {
         chart: {
@@ -40,14 +91,21 @@ var optionsT = {
             title: {
                 text: 'Date'
             },
-            //categories: []
         },
         yAxis: {
             title: {
                 text: 'Temperature °C'
             }
         },
-       series: [],
+       
+        plotOptions: {
+            series: {
+                marker: {
+                    enabled: false
+                }
+            }
+        },
+        series: [],
 
         navigator: {
             enabled: true
@@ -73,63 +131,50 @@ var optionsH = {
             title: {
                 text: 'Date'
             },
-            //categories: []
         },
         yAxis: {
             title: {
                 text: 'Humidity %'
             }
         },
+        plotOptions: {
+            series: {
+                marker: {
+                    enabled: false
+                }
+            }
+        },
        series: []
     };
 
-    var briefDate;
-    var briefStats = {
-        T: [],
-        H: []
-    };
+    var lastDate;
+    var rooms = {};
 
-    var lines = data.split('\n');
-
-    var seriesT = [];
-    var seriesH = [];
     // Iterate over the lines and add categories or series
     $.each(lines, function(lineNo, line) {
         var fields = line.split(',');
-        if( fields.length < 2 )
+        if( fields.length != 4 )
         	return;
-        var room = fields[1];
-    	if( !(room in seriesH) )
-        {
-        	seriesT[room] = {
-        		name: room,
-        		data: [],
-                color : colors[room]
-        		};
-         	optionsT.series.push(seriesT[room]);
 
-        	seriesH[room] = {
-        		name: room,
-        		data: [],
-                color : colors[room]
-        		};
-         	optionsH.series.push(seriesH[room]);
-        }
-        briefDate = fields[0];
-        var atDate = new Date( fields[0] );
+        var roomName = fields[1];
+        lastDate = fields[0];
+        var s = lastDate.substr(0,10)+"T"+lastDate.substr(11)+".000+01:00";
+        var atDate = new Date( s );
         var atTime = atDate.getTime();
         var valT = parseFloat(fields[2]);
         var valH = parseFloat(fields[3]);
-        briefStats.T[room] = valT;
-        briefStats.H[room] = valH;
-        var colsT = [ atTime, valT ];
-        var colsH = [ atTime, valH ];
-        if( lineNo % 5 == 0)
+
+        var room = rooms[roomName];
+    	if( room == undefined )
         {
-        	//options.xAxis.categories.push( atTime );
-        	seriesT[room].data.push(colsT);
-        	seriesH[room].data.push(colsH);
+            room = new Room(roomName);
+            rooms[roomName] = room;
+         	optionsT.series.push(room.seriesT);
+         	optionsH.series.push(room.seriesH);
         }
+        room.appendT( valT );
+        room.appendH( valH );
+        room.lineTo( atTime );
     });
 
     Highcharts.setOptions({
@@ -140,9 +185,10 @@ var optionsH = {
     var chartT = new Highcharts.Chart(optionsT);
     var chartH = new Highcharts.Chart(optionsH);
 
-    PrintBrief( "Dehors", briefStats );
-    PrintBrief( "Cave", briefStats );
-    $( "#Today" ).text( briefDate );
+    $( "#Today" ).text( lastDate );
+    Object.keys(rooms).sort().reverse().forEach( function(key,i) {
+        rooms[key].print();
+    })
 });
 
 });
@@ -151,8 +197,6 @@ var optionsH = {
 <body>
 <div style="text-align: center; font-size: x-large; font-family: sans-serif; color: darkgrey;">
 <div id="Today">Loading...</div>
-<div id="T_cur_Dehors"></div>
-<div id="T_cur_Cave"></div>
 </div>
 <div id="containerT" style="height: 500px; min-width: 500px"></div>
 <div id="containerH" style="height: 500px; min-width: 500px"></div>

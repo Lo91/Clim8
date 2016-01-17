@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 						{
 							fclose(LogOut);
 						}
-						LogOut = fopen( fileName, "w+" );
+						LogOut = fopen( fileName, "a+" );
 						system("rm current.csv");
 						char cmd[40];
 						sprintf(cmd,"ln -s %s current.csv", fileName );
