@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-		<title>Climate 1.3</title>
+		<title>Climate 1.4</title>
         <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 		
 		<!-- 1. Add these JavaScript inclusions in the head of your page -->
@@ -19,6 +19,8 @@ colors["Dehors"] = "#90C3D4";
 colors["Salon"] = "#EBBC23";
 colors["Pelouse"] = "#3FD15A";
 colors["Salle de bain Bas"] = "#0943E3";
+colors["Robinet"] = "#0933CC";
+colors["Radiateur"] = "#E83E27";
 
 
 function Room( name )
@@ -85,19 +87,22 @@ function Room( name )
 
 
 
-    this.print = function()
+    this.print = function( anchor )
     {
         var divId = "brief_"+name.replace(/ /g , "_");
-        $( "#Today" ).after( "<div id='"+divId+"'></div>\n" );
+        $( anchor ).append( "<div id='"+divId+"'></div>\n" );
         var minmaxT = "["+this.minT+"-"+this.maxT+"]";
         var minmaxH = "["+this.minH+"-"+this.maxH+"]";
         $( "#"+divId ).text( name+": "+this.lastT+"°C "+minmaxT+"    "+this.lastH+"% "+minmaxH+"" ).css('color', colors[name]);
     }
 }
 
-$(document).ready(function() {
 
-$.get('current.csv', function(data) {
+function LoadCsv( csvName )
+{
+    $("#Briefs").text("");
+
+$.get(csvName, function(data) {
 var lines = data.split('\n');
 
 var optionsT = {
@@ -205,22 +210,48 @@ var optionsH = {
         }
     });   
 
-    $( "#Today" ).text( lastDate );
+    var day = lastDate.substr(0,10);
+    var hour = lastDate.substr(11);
+    $( "#Today" ).text( day );
+    $( "#Hour" ).text( hour );
     Object.keys(rooms).sort().reverse().forEach( function(key,i) {
         rooms[key].forceLast();
-        rooms[key].print();
+        rooms[key].print("#Briefs");
     })
 
     var chartT = new Highcharts.Chart(optionsT);
     var chartH = new Highcharts.Chart(optionsH);
 });
 
+}
+
+var gDay;
+
+
+$(document).ready(function()
+{
+gDay = new Date();
+LoadCsv( 'current.csv');
 });
+
+function PrevNext_Click( factor )
+{
+    var ms = gDay.getTime();
+    ms += 1000*60*60*24*factor;
+    gDay = new Date(ms);
+    var s = gDay.toISOString();
+    s = s.substr(0,10);
+    LoadCsv( s+".csv");
+}
 
 </script>
 <body>
 <div style="text-align: center; font-size: x-large; font-family: sans-serif; color: darkgrey;">
-<div id="Today">Loading...</div>
+<button onclick="PrevNext_Click(-1)"> &lt; </button>
+<span id="Today">Loading...</span>
+<button onclick="PrevNext_Click(+1)"> &gt; </button>
+<span id="Hour"></span>
+<div id="Briefs"></div>
 </div>
 <div id="containerT" style="height: 500px; min-width: 500px"></div>
 <div id="containerH" style="height: 500px; min-width: 500px"></div>
